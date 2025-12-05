@@ -1,7 +1,7 @@
 import type { AxiosRequestConfig } from "axios";
 import * as _ from "remeda";
-import * as Either from "./adts/either";
-import * as Reader from "./adts/reader";
+import * as Either from "./adts/either.js";
+import * as Reader from "./adts/reader.js";
 
 const safeDiv = (denominator: number) => (numerator: number) => {
     if (denominator === 0) {
