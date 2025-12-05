@@ -1,0 +1,21 @@
+{
+  "name": "module-03",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "tsx adts.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "remeda": "^2.32.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0"
+  }
+}
