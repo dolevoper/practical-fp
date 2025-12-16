@@ -1,6 +1,6 @@
 import "./study.scss";
 
-import { Deck, parseGrade } from "./model";
+import { calcUpdatedCard, Deck, parseGrade } from "./model";
 
 const decks = JSON.parse(localStorage.getItem("decks") ?? "[]") as Deck[];
 const deck = loadDeck();
@@ -77,30 +77,9 @@ document.forms.namedItem("feedback")?.addEventListener("submit", (event) => {
     throw new Error();
   }
 
-  const card = deck.seenCards[0];
+  const card = calcUpdatedCard(grade, Date.now(), deck.seenCards[0]);
 
-  if (grade >= 3) {
-    if (card.successCount === 0) {
-      card.interval = 1;
-    } else if (card.successCount === 1) {
-      card.interval = 6;
-    } else {
-      card.interval = Math.round(card.interval * card.easinessFactor);
-    }
-
-    ++card.successCount;
-  } else {
-    card.successCount = 0;
-    card.interval = 1;
-  }
-
-  card.easinessFactor += 0.1 - (5 - grade) * (0.08 + (5 - grade) * 0.02);
-
-  if (card.easinessFactor < 1.3) {
-    card.easinessFactor = 1.3;
-  }
-
-  card.lastSeen = Date.now();
+  deck.seenCards[0] = card;
 
   studyCard();
 });

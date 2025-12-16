@@ -43,16 +43,37 @@ const movies: Movie[] = [
 ];
 
 // Add to each movie the number of words in the plot summary (field name: plotWordCount)
-export const moviesWithPlotWordCount = movies;
+export const moviesWithPlotWordCount = movies
+  .map((movie) => ({ ...movie, plotWordCount: movie.plot.split(" ").length }));
 
 // Show only movie titles after year 2000
-export const titlesAfter2000 = movies;
+export const titlesAfter2000 = movies
+  // .flatMap(({ year, title }) => year > 2000 ? [title] : []);
+  .filter(({ year }) => year > 2000)
+  .map(({ title }) => title);
 
 // Create a CSV containing movie year, title and poster
 // Include only movies with more than 1 genre
 // Order movies by title
-export const moviesReport = movies.toString();
+export const moviesReport = [
+  ["year", "title", "poster"],
+  ...movies
+    .filter(({ genre }) => genre.includes(","))
+    .toSorted(({ title: titleA }, { title: titleB }) => titleA.localeCompare(titleB))
+    .map(({ year, title, poster }) => [year, title, poster])
+].map((row) => row.join(",")).join("\n");
 
 
 // Group movies by genre
-export const moviesBygenre = {} as Record<string, Movie[]>;
+export const moviesBygenre = movies
+  .map((movie) => movie.genre.split(", ").map((genre) => [genre, movie] as const))
+  // [string, movie][][]
+  .flat()
+  // [string, movie][]
+  .reduce(
+    (res, [genre, movie]) => ({
+      ...res,
+      [genre]: [...(res[genre] ?? []), movie]
+    }),
+    {} as Record<string, Movie[]>
+  );
