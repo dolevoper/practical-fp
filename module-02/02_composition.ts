@@ -1,8 +1,18 @@
 import * as _ from "remeda";
 
 // 1. Write a composed/piped version of stringToJSON
-function stringToJSON(str: string) {
-  const escaped = str
+const stringToJSON = _.piped(
+  escapeString,
+  quote
+);
+// function stringToJSON(str: string) {
+//   const escaped = escapeString(str);
+
+//   return quote(escaped);
+// }
+
+function escapeString(str: string) {
+  return str
     .replaceAll("\\", "\\\\")
     .replaceAll("\n", "\\n")
     .replaceAll("\f", "\\f")
@@ -10,26 +20,38 @@ function stringToJSON(str: string) {
     .replaceAll("\r", "\\r")
     .replaceAll("\t", "\\t")
     .replaceAll('"', "\\\"");
+}
 
-  return `"${escaped}"`;
+function quote(str: string) {
+  return `"${str}"`;
 }
 
 
 
 // 2. Write a composed/piped version of arrayToJSON
-function arrayToJSON(arr: (string | number | boolean)[]) {
-  const arrayOfJSON = arr.map((value) => {
-    if (typeof value === "string") {
-      return stringToJSON(value);
-    }
+const arrayToJSON = (arr: (string | number | boolean)[]) => _.pipe(
+  arr,
+  _.map(primitiveToJSON),
+  _.join(", "),
+  surroundWithBrackets,
+);
+// function arrayToJSON(arr: (string | number | boolean)[]) {
+//   const arrayOfJSON = arr.map(primitiveToJSON);
 
-    return value.toString();
-  });
+//   return surroundWithBrackets(arrayOfJSON.join(", "));
+// }
 
-  return `[${arrayOfJSON.join(", ")}]`;
+const primitiveToJSON = (value: string | number | boolean) => {
+  if (typeof value === "string") {
+    return stringToJSON(value);
+  }
+
+  return value.toString();
+};
+
+function surroundWithBrackets(str: string) {
+  return `[${str}]`;
 }
-
-
 
 // 3. Write a composed/piped version of submitForm
 type AppState = {
@@ -38,16 +60,35 @@ type AppState = {
   submittedBefore: boolean
 };
 
-function submitForm(appState: AppState): AppState {
+const submitForm = _.piped(
+  resetError,
+  markDirty,
+  showSpinner,
+);
+// function submitForm(appState: AppState): AppState {
+//   return markDirty(showSpinner(resetError(appState)));
+// }
+
+function resetError(appState: AppState): AppState {
   return {
     ...appState,
     error: "",
-    shouldShowSpinner: true,
-    submittedBefore: true
   };
 }
 
+function showSpinner(appState: AppState): AppState {
+  return {
+    ...appState,
+    shouldShowSpinner: true,
+  };
+}
 
+function markDirty(appState: AppState): AppState {
+  return {
+    ...appState,
+    submittedBefore: true,
+  };
+}
 
 // 4. Write a composed/piped version of updatePlayer
 type Vector2D = { x: number, y: number };
@@ -65,10 +106,26 @@ function updatePlayer(player: Player, inputData: Vector2D): Player {
   const destination = scaleVector(newDirection, maxVelocity);
   const updatedVelocity = moveTowards(player.velocity, destination, accelaration);
 
+  return _.pipe(
+    player,
+    (player) => updateVelocity(player, updatedVelocity),
+    (player) => updatePosition(player, addVectors(player.position, updatedVelocity)),
+  );
+
+  // return updatePosition(updateVelocity(player, updatedVelocity), addVectors(player.position, updatedVelocity));
+}
+
+function updateVelocity(player: Player, velocity: Vector2D): Player {
   return {
     ...player,
-    velocity: updatedVelocity,
-    position: addVectors(player.position, updatedVelocity)
+    velocity,
+  }
+}
+
+function updatePosition(player: Player, position: Vector2D): Player {
+  return {
+    ...player,
+    position,
   };
 }
 

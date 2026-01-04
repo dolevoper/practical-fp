@@ -12,59 +12,73 @@ const accelaration = 2;
 const maxVelocity = 10;
 
 function updatePlayer(player: Player, inputData: Vector2D): Player {
-    const newDirection = normalizeVector(inputData);
-    const destination = scaleVector(newDirection, maxVelocity);
-    const updatedVelocity = moveTowards(player.velocity, destination, accelaration);
+    const updatedVelocity = _.pipe(
+        inputData,
+        normalizeVector,
+        scaleVector(maxVelocity),
+        moveTowards(player.velocity, accelaration),
+    );
 
-    return {
-        ...player,
-        velocity: updatedVelocity,
-        position: addVectors(player.position, updatedVelocity)
-    };
+    return _.pipe(
+        player,
+        updateVelocity(updatedVelocity),
+        updatePosition,
+    );
 }
 
 function vectorLength(vector: Vector2D) {
     return Math.sqrt(vector.x ** 2 + vector.y ** 2);
 }
 
-function scaleVector(vector: Vector2D, by: number): Vector2D {
-    return {
-        x: vector.x * by,
-        y: vector.y * by
-    };
-}
+const scaleVector = (by: number) => (vector: Vector2D): Vector2D => ({
+    x: vector.x * by,
+    y: vector.y * by
+});
 
 function normalizeVector(vector: Vector2D): Vector2D {
     const length = vectorLength(vector);
 
-    return scaleVector(vector, 1 / length);
+    return scaleVector(1 / length)(vector);
 }
 
-function moveTowards(vector: Vector2D, destination: Vector2D, step: number): Vector2D {
-    return {
-        x: vector.x > destination.x ? Math.max(vector.x - step, destination.x) : Math.min(vector.x + step, destination.x),
-        y: vector.y > destination.y ? Math.max(vector.y - step, destination.y) : Math.min(vector.y + step, destination.y)
-    };
-}
+const moveTowards = (destination: Vector2D, step: number) => (vector: Vector2D): Vector2D => ({
+    x: vector.x > destination.x ? Math.max(vector.x - step, destination.x) : Math.min(vector.x + step, destination.x),
+    y: vector.y > destination.y ? Math.max(vector.y - step, destination.y) : Math.min(vector.y + step, destination.y)
+});
 
 function addVectors(vector1: Vector2D, vector2: Vector2D): Vector2D {
     return {
         x: vector1.x + vector2.x,
         y: vector1.y + vector2.y
     };
-}
+};
 
+const updateVelocity = (velocity: Vector2D) => (player: Player): Player => ({
+    ...player,
+    velocity,
+});
+
+function updatePosition(player: Player): Player {
+    return {
+        ...player,
+        position: addVectors(player.position, player.velocity),
+    };
+}
 
 // Build your own mini validation library!
 // Implement all the missing validators
 type Validator = (value: unknown) => boolean;
 
-export const isAnything = (value: unknown) => true;
-export const isString = isAnything;
-export const isNumber = isAnything;
-export const isBoolean = isAnything;
-export const either = (...validators: Validator[]) => isAnything;
-export const isPrimitive = isAnything;
-export const isArrayOf = (validator: Validator) => isAnything;
-export const hasShape = (validators: Record<PropertyKey, Validator>) => isAnything;
-export const optionally = (validator: Validator) => isAnything;
+export const isAnything = (_: unknown) => true;
+export const isString = (value: unknown) => typeof value === "string";
+export const isNumber = (value: unknown) => typeof value === "number";
+export const isBoolean = (value: unknown) => typeof value === "boolean";
+export const either = (...validators: Validator[]) => (value: unknown) => validators.some((validator) => validator(value));
+export const isPrimitive = either(isString, isNumber, isBoolean);
+export const isArrayOf = (validator: Validator) => (value: unknown) => Array.isArray(value) && value.every(validator);
+export const hasShape = (validators: Record<PropertyKey, Validator>) => (value: unknown) =>
+    typeof value === "object" &&
+    value &&
+    Object.entries(validators).every(([key, validator]) => validator(value[key as keyof typeof value])) &&
+    Object.entries(value).every(([key, value]) => key in validators && validators[key](value));
+export const optionally = (validator: Validator) => (value: unknown) => value == null || validator(value);
